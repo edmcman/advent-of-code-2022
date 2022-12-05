@@ -54,16 +54,22 @@ fn process_move(m: &mut std::collections::HashMap<usize, Vec<char>>, mov: &Move,
 }
 
 fn main() {
+    let args : Vec<String> = std::env::args().collect();
+    let part_one = match args.get(1).map(|s| s.as_str()) {
+        Some ("first") => true,
+        Some ("second") => false,
+        Some (_) => panic!("expected first or second"),
+        None => true,
+    };
+
     let input: Vec<String> = std::io::stdin()
         .lines()
         .map(|o| o.unwrap())
-        //.map(|s| String::from(s.trim()))
         .collect();
 
     // Parse the stacks
     let mut stack_lines: Vec<&String> = input
         .iter()
-        //.inspect(|s| println!("alrighty {s} {}", *s == ""))
         .take_while(|s| **s != "")
         .collect();
 
@@ -74,7 +80,6 @@ fn main() {
         .map(|s| parse_stackline(s))
         .inspect(|h| println!("ha {:?}", h))
         .flatten()
-        //.into_iter()
         .sorted_by_key(|(k,_)| *k)
         .group_by(|(i, c)| *i);
 
@@ -99,7 +104,7 @@ fn main() {
 
     println!("moves: {:?}", moves);
 
-    moves.iter().for_each(|mov| process_move(&mut stackmap, mov, false));
+    moves.iter().for_each(|mov| process_move(&mut stackmap, mov, part_one));
 
     println!("final stackmap: {:?}", stackmap);
 
