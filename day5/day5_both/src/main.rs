@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -85,18 +86,14 @@ fn main() {
 
     let m = m.into_iter();
 
-    // The groupby interface is so awkward to use I am having trouble using it functionally!
+    // The groupby interface is so awkward!
 
-    let mut stackmap: std::collections::HashMap<usize, Vec<char>> =
-        std::collections::HashMap::new();
-
-    for (key, group) in m {
+    let mut stackmap : HashMap<usize, Vec<_>> = m.map(|(key, group)| {
         let v: Vec<_> = group.map(|(a, b)| b).collect();
         // Reverse
         let v: Vec<_> = v.iter().rev().copied().collect();
-        println!("group {key} {:?}", v);
-        stackmap.insert(key, v);
-    }
+        (key, v)
+    }).collect();
 
     println!("initial stackmap: {:?}", stackmap);
 
