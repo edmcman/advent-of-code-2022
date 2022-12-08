@@ -4,6 +4,7 @@
     "day3/day3_part2/Cargo.toml",
     "day4/day4_both/Cargo.toml",
     "day5/day5_both/Cargo.toml",
-    "day6/day6_both/Cargo.toml"
+    "day6/day6_both/Cargo.toml",
+    "day7/day7_both/Cargo.toml"
     ]
 }
