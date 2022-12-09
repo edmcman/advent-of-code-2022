@@ -36,6 +36,29 @@ fn get_highest_in_direction(f: &Forrest, d: &Direction, p: &Point) -> i32 {
     highest
 }
 
+fn view_distance_direction(f: &Forrest, d: &Direction, p: &Point) -> i32 {
+    let look = look_in_direction(f, d, p);
+    let height = f.get(p.r).unwrap().get(p.c).unwrap();
+
+    let view: Vec<i32> = look.iter().take_while(|oh| *oh < height).copied().collect();
+    // is there another item? after the view?  if so add one
+    let score = if view.len() < look.len() { view.len() + 1 } else { view.len() };
+
+    score.try_into().unwrap()
+}
+
+fn view_score(f: &Forrest, p: &Point) -> i32 {
+    [
+        Direction::Left,
+        Direction::Right,
+        Direction::Up,
+        Direction::Down,
+    ]
+    .iter()
+    .map(|d| view_distance_direction(f, d, p))
+    .product()
+}
+
 fn is_visible(f: &Forrest, p: &Point) -> bool {
     let h = get_height(f, p).unwrap();
     [
@@ -66,10 +89,7 @@ fn main() {
     let vis: Vec<_> = point_iterator
     .inspect(|p| println!("p {:?} {}", p, is_visible(&f, &p)))
     .map(|p| is_visible(&f, &p))
-        //.filter(|b| *b)
-        //.enumerate()
         .collect();
-        //count();
 
     let nvis = vis.iter().filter(|b| **b).count();
 
