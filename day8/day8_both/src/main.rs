@@ -86,12 +86,16 @@ fn main() {
 
     let point_iterator = (0..numr).flat_map(|r| (0..numc).map(move |c| Point { r, c }));
 
-    let vis: Vec<_> = point_iterator
+    let vis: Vec<_> = point_iterator.clone()
     .inspect(|p| println!("p {:?} {}", p, is_visible(&f, &p)))
     .map(|p| is_visible(&f, &p))
         .collect();
 
     let nvis = vis.iter().filter(|b| **b).count();
 
-    println!("part1: {:?}", nvis)
+    println!("part1: {:?}", nvis);
+
+    let vis_score = point_iterator.clone().map(|p| view_score(&f, &p)).max().unwrap();
+
+    println!("part 2: {vis_score}");
 }
