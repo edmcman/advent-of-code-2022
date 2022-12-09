@@ -18,26 +18,21 @@ fn get_height(f: &Forrest, p: &Point) -> Option<i32> {
     f.get(p.r)?.get(p.c).copied()
 }
 
-fn get_highest_in_direction(f: &Forrest, d: &Direction, p: &Point) -> i32 {
+fn look_in_direction(f: &Forrest, d: &Direction, p: &Point) -> Vec<i32> {
     let g = |r: usize, c: usize| f.get(r).unwrap().get(c).unwrap();
 
-    let highest = match d {
-        Direction::Up => (0..(p.r)).map(|newr| g(newr, p.c)).max(),
-        Direction::Down => ((p.r + 1)..(f.len())).map(|newr| g(newr, p.c)).max(),
-        Direction::Left => (0..(p.c)).map(|newc| g(p.r, newc)).max(),
+    match d {
+        Direction::Up => (0..(p.r)).rev().map(|newr| *g(newr, p.c)).collect(),
+        Direction::Down => ((p.r + 1)..(f.len())).map(|newr| *g(newr, p.c)).collect(),
+        Direction::Left => (0..(p.c)).rev().map(|newc| *g(p.r, newc)).collect(),
         Direction::Right => ((p.c + 1)..(f.get(0).unwrap().len()))
-            .map(|newc| g(p.r, newc))
-            .max(),
-    };
+            .map(|newc| *g(p.r, newc)).collect(),
+    }
+}
 
-    //println!("wtf {}..{}", p.c, f.get(0).unwrap().len());
-
-    //println!("{:?} {:?} highest={:?}", p, d, highest);
-
-    let highest = highest.copied().unwrap_or(-1);
-
-    //println!("{:?} {:?} highest={highest}", p, d);
-
+fn get_highest_in_direction(f: &Forrest, d: &Direction, p: &Point) -> i32 {
+    let highest = look_in_direction(f, d, p).iter().max().copied();
+    let highest = highest.unwrap_or(-1);
     highest
 }
 
