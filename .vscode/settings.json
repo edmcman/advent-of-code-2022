@@ -1,12 +1,13 @@
 {
     "rust-analyzer.linkedProjects": [
-    "day3/day3_part1/Cargo.toml",
-    "day3/day3_part2/Cargo.toml",
-    "day4/day4_both/Cargo.toml",
-    "day5/day5_both/Cargo.toml",
-    "day6/day6_both/Cargo.toml",
-    "day7/day7_both/Cargo.toml",
-    "day8/day8_both/Cargo.toml",
-    "day9/day9_both/Cargo.toml"
+        "day3/day3_part1/Cargo.toml",
+        "day3/day3_part2/Cargo.toml",
+        "day4/day4_both/Cargo.toml",
+        "day5/day5_both/Cargo.toml",
+        "day6/day6_both/Cargo.toml",
+        "day7/day7_both/Cargo.toml",
+        "day8/day8_both/Cargo.toml",
+        "day9/day9_both/Cargo.toml",
+        "day10/day10_both/Cargo.toml"
     ]
 }
