@@ -1,4 +1,6 @@
+use itertools::Itertools;
 use num::Integer;
+use std::cell::RefCell;
 
 type Worry = u32;
 
@@ -19,7 +21,7 @@ impl Operand {
     fn compute(&self, old: u32) -> u32 {
         match self {
             Self::Old => old,
-            Self::Const(n) => *n
+            Self::Const(n) => *n,
         }
     }
 }
@@ -49,7 +51,7 @@ impl Operation {
     fn compute(&self, old: u32) -> u32 {
         match self {
             Self::Plus(op1, op2) => op1.compute(old) + op2.compute(old),
-            Self::Times(op1, op2) => op1.compute(old) * op2.compute(old)
+            Self::Times(op1, op2) => op1.compute(old) * op2.compute(old),
         }
     }
 }
@@ -69,7 +71,7 @@ impl Test {
 
     fn compute(&self, worry: u32) -> bool {
         match self {
-            Self::DivisibleBy(d) => worry.is_multiple_of(d)
+            Self::DivisibleBy(d) => worry.is_multiple_of(d),
         }
     }
 }
@@ -90,7 +92,10 @@ impl Next {
             .collect::<Vec<usize>>()
             .as_slice()
         {
-            [t, f] => Self{true_dest: *t, false_dest: *f},
+            [t, f] => Self {
+                true_dest: *t,
+                false_dest: *f,
+            },
             _ => panic!("uh oh"),
         }
     }
@@ -102,6 +107,7 @@ struct Monkey {
     op: Operation,
     t: Test,
     n: Next,
+    num_inspections: usize,
 }
 
 impl Monkey {
@@ -126,7 +132,10 @@ impl Monkey {
                 .split(',')
                 .map(|s| dbg!(s).parse::<u32>().unwrap())
                 .collect(),
-            l => { dbg!(l); panic!("whoops") },
+            l => {
+                dbg!(l);
+                panic!("whoops")
+            }
         };
 
         let op = Operation::from_string(&strs[2]);
@@ -135,7 +144,13 @@ impl Monkey {
 
         let n = Next::from_strings(&strs[4..=5]);
 
-        Monkey{worry: starting, op, t, n}
+        Monkey {
+            worry: starting,
+            op,
+            t,
+            n,
+            num_inspections: 0,
+        }
     }
 }
 
@@ -143,24 +158,49 @@ fn main() {
     let i = std::io::stdin().lines().map(|l| l.unwrap());
     let l: Vec<_> = i.collect();
 
-    let mut monkeys: Vec<_> = l.chunks(7).map(|strs| Monkey::from_strings(strs)).collect();
+    let monkeys: Vec<_> = l
+        .chunks(7)
+        .map(|strs| Monkey::from_strings(strs))
+        .map(|m| RefCell::new(m))
+        .collect();
 
-    for _ in 1..20 {
-        for m in monkeys.iter() {
-            let new_dests = m.worry.iter().map(|item| {
-                let old_inspect = item;
-                let new_worry = m.op.compute(*old_inspect);
-                let new_worry = new_worry.div_floor(&3);
-                let t = m.t.compute(new_worry);
-                let dest = if t { m.n.true_dest } else { m.n.false_dest };
-                (*item, dest)
-            });
+    for i in 1..=20 {
+        dbg!((i, &monkeys));
 
-            new_dests.for_each(|(i, m)| {
-                monkeys.get_mut(m).unwrap().worry.push(i);
-            })
+        for mr in monkeys.iter() {
+            let mut n = 0;
+            // Make sure the reference goes out of scope.
+            {
+                let m = mr.borrow_mut();
+                let new_dests = m.worry.iter().map(|item| {
+                    let old_inspect = item;
+                    n += 1;
+                    let new_worry_intermediate = m.op.compute(*old_inspect);
+                    let new_worry = new_worry_intermediate.div_floor(&3);
+                    println!("old {old_inspect} inter {new_worry_intermediate} new {new_worry}");
+                    let t = m.t.compute(new_worry);
+                    let dest = if t { m.n.true_dest } else { m.n.false_dest };
+                    (new_worry, dest)
+                });
+
+                new_dests.for_each(|(i, m)| {
+                    monkeys.get(m).unwrap().borrow_mut().worry.push(i);
+                });
+            }
+
+            mr.borrow_mut().num_inspections += n;
+
+            mr.borrow_mut().worry.clear()
         }
     }
 
     println!("Monkeys {:?}", monkeys);
+    let most_inspections: usize = monkeys
+        .iter()
+        .map(|m| m.borrow().num_inspections)
+        .sorted()
+        .rev()
+        .take(2)
+        .product();
+    println!("Ok {most_inspections}");
 }
