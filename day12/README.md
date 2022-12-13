@@ -1,5 +1,5 @@
 Wow, today's challenge was frustrating.
-`[main.rs.fail`](day12_both/src/main.rs.fail) is my attempt at solving this
+[main.rs.fail](day12_both/src/main.rs.fail) is my attempt at solving this
 using iterators.  Apparently if you have nested closures and one is mutable, bad
 things happen.  Yeah, in an ideal world, your functional code would be pure and
 wouldn't have side effects.  But I thought I'd be able to implement this using
