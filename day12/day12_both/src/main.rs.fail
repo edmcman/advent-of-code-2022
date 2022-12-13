@@ -1,0 +1,172 @@
+use std::thread::current;
+
+struct Grid(Vec<Vec<char>>);
+
+fn char_to_elevation(c: &char) -> char {
+    match c {
+        'S' => 'a',
+        'E' => 'z',
+        _ => *c,
+    }
+}
+
+impl Grid {
+    fn rows(&self) -> usize {
+        self.0.len()
+    }
+
+    fn cols(&self) -> usize {
+        self.0.get(0).unwrap().len()
+    }
+
+    fn get_elevation(&self, p: &Position) -> Option<char> {
+        //dbg!(p);
+        let r = self.0.get(p.r)?;
+        let c = r.get(p.c)?;
+        Some(char_to_elevation(c))
+    }
+
+    fn find(&self, c: char) -> Position {
+        let (r, c) = self
+            .0
+            .iter()
+            .enumerate()
+            .find_map(|(ri, r)| {
+                r.iter()
+                    .enumerate()
+                    .find_map(|(ci, c2)| if c == *c2 { Some(ci) } else { None })
+                    .map(|ci| (ri, ci))
+            })
+            .unwrap();
+        Position {
+            r: r.try_into().unwrap(),
+            c: c.try_into().unwrap(),
+        }
+    }
+
+    fn find_start(&self) -> Position {
+        self.find('S')
+    }
+
+    fn find_end(&self) -> Position {
+        self.find('E')
+    }
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    const DELTAS: [(Direction, (isize, isize)); 4] = [
+        (Self::Up, (-1, 0)),
+        (Self::Down, (1, 0)),
+        (Self::Left, (0, -1)),
+        (Self::Right, (0, 1)),
+    ];
+}
+
+#[derive(PartialEq, Debug, Clone)]
+
+struct Position {
+    r: usize,
+    c: usize,
+}
+
+impl Position {
+    fn mov(&self, d: &Direction) -> Option<Position> {
+        let (_, (rd, cd)) = Direction::DELTAS
+            .iter()
+            .find(|(d2, _deltas)| d == d2)
+            .unwrap();
+        Some(Position {
+            r: usize::try_from(isize::try_from(self.r).ok()? + *rd).ok()?,
+            c: usize::try_from(isize::try_from(self.c).ok()? + *cd).ok()?,
+        })
+    }
+
+    fn next_move(&self, g: &Grid, d: &Direction) -> Option<Position> {
+        //dbg!(self);
+        let current_elevation = g.get_elevation(&self)?;
+        //dbg!(&current_elevation);
+        let max_elevation = std::char::from_u32(current_elevation as u32 + 1)?;
+        //dbg!(&next_elevation);
+        //dbg!(d);
+        let next_position = self.mov(d)?;
+        let next_elevation = g.get_elevation(&next_position)?;
+
+/*        if (current_elevation == 'c') {
+            println!("wtf {current_elevation} {next_elevation} {max_elevation}");
+            println!("{}", next_elevation <= max_elevation);
+        }
+*/
+        //dbg!(&next_position);
+        if (next_elevation <= max_elevation)
+            && next_position.r < g.rows()
+            && next_position.c < g.cols()
+        {
+            Some(next_position)
+        } else {
+            //dbg!("none");
+            None
+        }
+    }
+}
+
+fn main() {
+    let grid: Vec<_> = std::io::stdin()
+        .lines()
+        .map(|l| l.unwrap())
+        .map(|l| l.chars().collect::<Vec<_>>())
+        .collect();
+    let grid = Grid(grid);
+
+    let start_position = grid.find_start();
+    let mut state: Vec<(Vec<(Position, Direction)>, Position)> = vec![(Vec::new(), start_position.clone())];
+
+    let dirs = [
+        Direction::Left,
+        Direction::Right,
+        Direction::Up,
+        Direction::Down,
+    ];
+
+    let mut already_visited = vec![start_position.clone()];
+
+    for _ in 1..40 {
+        // XXX: Why can't this be into_iter?
+        let new_state = state.iter().flat_map(|(moves, pos)| {
+            dirs.iter().flat_map(|d| {
+                let d = d.clone();
+                let new_pos = pos.next_move(&grid, &d)?;
+                let backtrack = already_visited.iter().find(|old_pos| **old_pos == new_pos).is_some();
+                if backtrack {
+                    None
+                } else {
+                    already_visited.push(pos.clone());
+                    let mut moves = moves.clone();
+                    moves.push((pos.clone(), d));
+                    Some((moves, new_pos))
+                }
+            })
+        });
+
+        state = new_state.collect();
+
+        let o = state.iter().find(|(_, p)| *p == grid.find_end());
+        if o.is_some() {
+            println!("{:?}", o);
+            println!("{:?}", o.unwrap().0.len());
+            break;
+        }
+
+        dbg!(state.len());
+        //println!("{:?}", state);
+    }
+
+    //dbg!(state);
+}
