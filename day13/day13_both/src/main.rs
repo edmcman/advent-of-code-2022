@@ -6,7 +6,7 @@ use itertools::Itertools;
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum Packet {
     Int(i32),
-    List(Vec<Box<Packet>>),
+    List(Vec<Packet>),
 }
 
 impl PartialOrd for Packet {
@@ -15,11 +15,11 @@ impl PartialOrd for Packet {
             (Self::Int(l), Self::Int(r)) => l.partial_cmp(&r),
             (Self::List(l), Self::List(r)) => l.partial_cmp(r),
             (l @ Self::Int(_), Self::List(r)) => {
-                let v = vec![Box::new(l.clone())];
+                let v = vec![l.clone()];
                 v.partial_cmp(r)
             }
             (Self::List(l), r @ Self::Int(_)) => {
-                let v = vec![Box::new(r.clone())];
+                let v = vec![r.clone()];
                 l.partial_cmp(&v)
             }
         }
@@ -40,9 +40,9 @@ impl Packet {
                 Some(Self::Int(f.round() as i32))
             }
             json::JsonValue::Array(a) => {
-                let t: Option<Vec<Box<Self>>> = a
+                let t: Option<Vec<Self>> = a
                     .iter()
-                    .map(|v| Self::from_json(v).map(|o| Box::new(o)))
+                    .map(|v| Self::from_json(v))
                     .collect();
                 t.map(|o| Self::List(o))
             }
