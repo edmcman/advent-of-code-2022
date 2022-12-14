@@ -1,6 +1,7 @@
 use json;
 use std::cmp::Ordering;
 use std::str::FromStr;
+use itertools::Itertools;
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum Packet {
@@ -82,20 +83,28 @@ impl PacketPair {
 }
 
 fn main() {
-    let z: Vec<_> = std::io::stdin().lines().map(|l| l.unwrap()).collect();
+    let input: Vec<_> = std::io::stdin().lines().map(|l| l.unwrap()).collect();
 
-    let z: Vec<_> = z
+    let pairs: Vec<_> = input
         .chunks(3)
         .map(|strs| PacketPair::from_strs(strs))
         .collect();
 
     //dbg!(&z);
 
-    let n: usize = z
+    let p1: usize = pairs
         .iter()
         .enumerate()
         .filter_map(|(i, pair)| if pair.is_sorted() { Some(i + 1) } else { None })
         .sum();
 
-    println!("Sorted: {n}");
+    println!("Part 1: {p1}");
+
+    let dividers = ["[[2]]", "[[6]]"].map(|s| Packet::from_str(s).expect("json"));
+
+    // We don't need pairs anymore, so we can own it.
+    let p2v: Vec<_> = pairs.into_iter().flat_map(|s| [s.0, s.1]).chain(dividers.clone().into_iter()).sorted().collect();
+    //p2v.iter().for_each(|j| println!("{:?}", j));
+    let p2: usize = dividers.map(|divider| p2v.iter().enumerate().find_map(|(i,e)| if *e == divider { Some(i+1) } else {None}).unwrap()).iter().product();
+    println!("Part 2: {p2}");
 }
