@@ -28,6 +28,10 @@ impl Point {
     fn distance(&self, o: &Point) -> isize {
         (o.y - self.y).abs() + (o.x - self.x).abs()
     }
+
+    fn can_there_be_a_beacon_here(&self, sensors: &Vec<Sensor>) -> bool {
+        !sensors.iter().any(|s| self.distance(&s.loc) <= s.distance())
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -48,6 +52,10 @@ impl Sensor {
             loc: Point::from_str(sensor)?,
             nearest_beacon: Point::from_str(beacon)?,
         })
+    }
+
+    fn distance(&self) -> isize {
+        self.loc.distance(&self.nearest_beacon)
     }
 }
 
@@ -102,6 +110,9 @@ fn main() {
     // Mark where beacons cannot be
     let grid_p1 = sensors.iter().fold(grid.clone(), |grid, sensor| {
         let distance = sensor.loc.distance(&sensor.nearest_beacon);
+
+        println!("Distance between sensor {:?} and beacon is {}", sensor, distance);
+
         // We know there are no beacons of that distance or closer
         // I'm lazy so I'll loop over the box
         let yr = ((sensor.loc.y - distance)..(sensor.loc.y + distance));
@@ -137,4 +148,34 @@ fn main() {
 
     //println!("grid row 10 {}", grid.count_notbeacon_in_row(10));
     println!("grid row 2000000 {}", grid_p1.count_notbeacon_in_row(2000000));
+
+    let part2_range = 0..=4000000;
+
+    // part 2. The idea is we'll iterate AROUND each dead area and test if each
+    // spot is ok.
+    let result = sensors.iter().find_map(|s| {
+        // We'll start at the bottom, s.loc - s.distance() - 1
+        let bottom = Point{y: s.loc.y - s.distance() - 1, ..s.loc};
+        let right = Point{x: s.loc.x + s.distance() + 1, ..s.loc};
+        let top = Point{y: s.loc.y + s.distance() + 1, ..s.loc};
+        let left = Point{x: s.loc.x - s.distance() - 1, ..s.loc};
+
+        let tmp = [bottom, right, top, left];
+        let mut outline_points = tmp.windows(2).flat_map(|p| {
+            let (start, end) = (p.get(0).unwrap(), p.get(1).unwrap());
+            let xrange = start.x .. end.x;
+            let yrange = start.y .. end.y;
+
+            let zip = xrange.zip(yrange);
+
+            zip
+        });
+
+        outline_points.find_map(|(x,y)| {
+            let tmp = Point{x,y};
+            if part2_range.contains(&x) && part2_range.contains(&y) && (Point{x, y}).can_there_be_a_beacon_here(&sensors) { Some(4000000*x + y) } else {None}
+        })
+    });
+
+    println!("part 2 {:?}", result);
 }
