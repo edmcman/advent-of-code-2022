@@ -1,5 +1,6 @@
 use parse_display::FromStr;
-use std::collections::{HashMap, HashSet};
+use pathfinding::directed::dijkstra;
+use std::collections::HashMap;
 
 #[derive(FromStr, PartialEq, Debug)]
 #[display("Valve {name} has flow rate={flow}; tunnel lead to valves {valves}")]
@@ -38,15 +39,15 @@ struct State {
     who: Who,
     at_valves: (String, String),
     mins: u32,
-    open_valves: Vec<String>,
-    pressure: u32,
+    open_valves: Vec<String>
+    //pressure: u32,
 }
 
 impl State {
-
+    /*
     fn hash(&self) -> (Who, (String, String), u32, Vec<String>) {
-        (self.who, self.at_valves, self.mins, self.open_valves)
-    }
+        (&self.who, &self.at_valves, &self.mins, &self.open_valves)
+    }*/
 
     fn get_valve(&self) -> &String {
         match self.who {
@@ -74,7 +75,7 @@ impl State {
         Self {
             who,
             mins,
-            pressure: if (update_pressure) {
+            /*pressure: if (update_pressure) {
                 self.pressure
                     + self
                         .open_valves
@@ -83,7 +84,7 @@ impl State {
                         .sum::<u32>()
             } else {
                 self.pressure
-            },
+            },*/
             ..self.clone()
         }
     }
@@ -94,7 +95,7 @@ impl State {
             open_valves: Vec::new(),
             at_valves: ("AA".to_string(), "AA".to_string()),
             who: Who::Me,
-            pressure: 0
+            //pressure: 0,
         }
     }
 }
@@ -157,14 +158,7 @@ fn best(
     st: &State,
     valves: &HashMap<String, Valve>,
     best_memo: &mut HashMap<State, Sequence>,
-    best_mins: &mut HashMap<u32, u32>,
 ) -> Option<Sequence> {
-
-    let competition = best_mins.get(&st.mins);
-    match competition {
-        Some(competition) => if *competition > st.pressure + 500 { return None }
-        _ => ()
-    };
 
     let memo = best_memo.get(st);
     let memo = memo.or_else(|| match st.who {
@@ -181,7 +175,7 @@ fn best(
         _ => None,
     });
     match memo {
-        Some(x) => (*x).clone(),
+        Some(x) => Some((*x).clone()),
         None => {
             let at_valve = valves.get(st.get_valve()).expect("valid valve");
 
@@ -237,11 +231,32 @@ fn best(
                 dbg!(st.mins);
             }*/
 
-            best_move
+            Some(best_move)
         }
     }
 
     //possible_actions
+}
+
+fn djikstra_helper<'a>(s: &'a String, valves: &'a HashMap<String, Valve>) -> HashMap<String, i32> {
+
+    dbg!(s);
+
+    let object = dijkstra::dijkstra_all(s, |v| {
+        valves
+            .get(v)
+            .expect("djikstra")
+            .valves
+            .iter()
+            .map(|valve| (valve.to_string(), 1))
+    })
+    .into_iter()
+    .filter(|(k,_)| valves.get(k).unwrap().flow > 0)
+    .map(|(k, v)| (k, v.1))
+    .collect();
+
+    //dbg!(&object);
+    object
 }
 
 fn main() {
@@ -254,20 +269,25 @@ fn main() {
 
     dbg!(&valves);
 
-    let mut best_mins: HashMap<u32, u32> = HashMap::new();
+    let mut valves_with_flow_and_start: Vec<&String> = valves
+        .iter()
+        .filter_map(|(n, v)| if v.flow > 0 { Some(n) } else { None })
+        .collect();
+    valves_with_flow_and_start.push(&valves.get("AA").unwrap().name);
 
-    let mut best_memo: HashMap<State, Sequence> = HashMap::new();
+    let dists: HashMap<(String, String), i32> = valves_with_flow_and_start
+        .iter()
+        .flat_map(|src| {
+            let d_results = djikstra_helper(*src, &valves);
+            dbg!(&d_results);
+            d_results
+                .into_iter()
+                .map(|(dst, dist)| ((src.to_string(), dst), dist))
+        })
+        .collect();
 
-    //let mut dh: HashMap<String, u32> = HashMap::new();
-
-    //valves.keys().map(|s| dist(&mut dh, s, &valves)).count();
-
-    //dbg!(&dh);
+    dbg!(&dists);
 
     let st = State::new();
-    let b = best(&st, &valves, &mut best_memo, &mut best_mins);
 
-    //search(&valves, st);
-
-    //println!("best: {:?}", b)
 }
